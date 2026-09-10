@@ -30,7 +30,28 @@ def load_inference_artifacts():
     global _model, _scaler, _metrics, _trace_df, _feature_cols
     
     if _model is None and os.path.exists(MODEL_PATH):
-        _model = joblib.load(MODEL_PATH)
+        try:
+            _model = joblib.load(MODEL_PATH)
+        except Exception as e:
+            print(f"[ML WARNING] Could not unpickle model ({e}). Retraining in-place...")
+            try:
+                from sklearn.ensemble import GradientBoostingRegressor
+                from feature_engineering import build_feature_pipeline
+                from generate_dataset import generate_cloud_trace
+                if not os.path.exists(DATA_PATH):
+                    generate_cloud_trace(DATA_PATH, n_samples=4000)
+                X_train, X_test, y_train, y_test, feat_cols = build_feature_pipeline(DATA_PATH)
+                _feature_cols = feat_cols
+                gbr = GradientBoostingRegressor(n_estimators=100, max_depth=5, learning_rate=0.08, random_state=42)
+                gbr.fit(X_train, y_train)
+                _model = gbr
+                try:
+                    joblib.dump(_model, MODEL_PATH)
+                except:
+                    pass
+                print("[ML SUCCESS] Dynamic model re-trained successfully in-place!")
+            except Exception as re_err:
+                print(f"[ML ERROR] Failed to retrain model: {re_err}")
         
     if _scaler is None and os.path.exists(SCALER_PATH):
         _scaler = joblib.load(SCALER_PATH)

@@ -19,8 +19,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY . /app
 
-# Expose Flask telemetry dashboard port
-EXPOSE 5000
-
-# Execute Cloud AI Auto-Scaler Telemetry Server
-CMD ["python", "app_flask.py"]
+# Production WSGI server (1 worker, 4 threads to fit inside 512MB RAM)
+CMD exec gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 1 --threads 4 --timeout 120 app_flask:app

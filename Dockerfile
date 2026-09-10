@@ -22,9 +22,5 @@ COPY . /app
 # Expose Flask telemetry dashboard port
 EXPOSE 5000
 
-# Container healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:5000/api/fleet_status || exit 1
-
 # Execute Cloud AI Auto-Scaler Telemetry Server
 CMD ["python", "app_flask.py"]

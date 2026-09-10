@@ -1,0 +1,46 @@
+{
+    "best_model_name": "Gradient Boosting",
+    "feature_columns": [
+        "cpu_util_percent",
+        "mem_util_percent",
+        "net_in_mbps",
+        "net_out_mbps",
+        "disk_io_percent",
+        "cpu_lag_1",
+        "cpu_lag_2",
+        "cpu_lag_3",
+        "mem_lag_1",
+        "net_in_lag_1",
+        "cpu_roll_mean_3",
+        "cpu_roll_mean_6",
+        "cpu_roll_std_6",
+        "cpu_velocity",
+        "cpu_acceleration",
+        "hour_sin",
+        "hour_cos",
+        "network_total_mbps",
+        "load_intensity"
+    ],
+    "metrics_summary": {
+        "Linear Regression": {
+            "R2_Score": 0.78,
+            "MAE": 5.0926,
+            "RMSE": 6.9674,
+            "MAPE_Percent": 14.4
+        },
+        "Random Forest": {
+            "R2_Score": 0.8459,
+            "MAE": 4.2271,
+            "RMSE": 5.8313,
+            "MAPE_Percent": 12.12
+        },
+        "Gradient Boosting": {
+            "R2_Score": 0.8462,
+            "MAE": 4.2359,
+            "RMSE": 5.8246,
+            "MAPE_Percent": 12.1
+        }
+    },
+    "test_sample_count": 799,
+    "train_sample_count": 3195
+}

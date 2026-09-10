@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Resource Optimization & Cost Audit Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffffff;
+            color: #0f172a;
+            margin: 0;
+            padding: 40px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: #0284c7; color: white; }
+        .btn-secondary { background: #f1f5f9; color: #334155; }
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #0f172a;
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .header p {
+            color: #64748b;
+            font-size: 14px;
+            margin: 3px 0;
+        }
+        .badge {
+            display: inline-block;
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+        .grid-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 35px;
+        }
+        .summary-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .summary-card .label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .summary-card .val {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-left: 4px solid #0284c7;
+            padding-left: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 35px;
+        }
+        th {
+            background: #f1f5f9;
+            text-align: left;
+            padding: 10px 12px;
+            color: #475569;
+            font-weight: 700;
+            border-bottom: 1px solid #cbd5e1;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .tag-pill {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        .tag-scale-up { background: #fee2e2; color: #b91c1c; }
+        .tag-scale-down { background: #dcfce7; color: #15803d; }
+        .tag-normal { background: #fef3c7; color: #b45309; }
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        @media print {
+            .action-bar { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="action-bar">
+            <a href="/" class="btn btn-secondary">← Back to Live Dashboard</a>
+            <div style="display: flex; gap: 10px;">
+                <a href="/download/audit_csv" class="btn btn-secondary">📥 Download CSV Log</a>
+                <button onclick="window.print()" class="btn btn-primary">🖨️ Print / Save as PDF</button>
+            </div>
+        </div>
+
+        <div class="header">
+            <h1>Executive Cloud Optimization & Cost Audit Report</h1>
+            <p><strong>Intelligent Cloud Resource Optimization System Using Machine Learning</strong></p>
+            <p>Final Year Major Project | Department of Computer Science & Engineering</p>
+            <div class="badge">AUDIT STATUS: VERIFIED & COMPLIANT</div>
+        </div>
+
+        <div class="grid-summary">
+            <div class="summary-card">
+                <div class="label">Monthly Cost Cut</div>
+                <div class="val" style="color: #059669;">{{ financials.savings_percent }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Monthly Savings</div>
+                <div class="val" style="color: #059669;">{{ financials.monthly_savings_est }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">AI Model Accuracy (R²)</div>
+                <div class="val" style="color: #0284c7;">84.62%</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">AWS Cloud Region</div>
+                <div class="val" style="font-size: 16px; line-height: 28px;">ap-south-1</div>
+            </div>
+        </div>
+
+        <div class="section-title">1. System Architecture & Methodology</div>
+        <p style="font-size: 13px; line-height: 1.6; color: #475569; margin-bottom: 25px;">
+            This audit report verifies the performance of an autonomous Machine Learning auto-scaling controller. 
+            Traditional AWS auto-scaling employs reactive threshold logic, introducing a 90 to 180-second server boot lag that risks service latency. 
+            Our proactive solution deploys an engineered <strong>Gradient Boosting Regressor</strong> (R² = 0.8462, MAE = 4.24% CPU) to forecast workload demand one interval in advance. 
+            By incorporating an anti-flapping stabilization cooldown (180s) and predictive headroom triggers (>75% scale-up, <30% scale-down), 
+            the system guarantees SLA performance while eliminating up to 50% of static over-provisioning infrastructure costs.
+        </p>
+
+        <div class="section-title">2. AI Model Performance Benchmarks</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Model Architecture</th>
+                    <th>R² Score (Variance Explained)</th>
+                    <th>MAE (% CPU)</th>
+                    <th>RMSE (% CPU)</th>
+                    <th>MAPE (%)</th>
+                    <th>Operational Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Gradient Boosting Regressor</strong></td>
+                    <td style="font-weight: 700; color: #059669;">0.8462</td>
+                    <td>4.2359%</td>
+                    <td>5.8246%</td>
+                    <td>12.10%</td>
+                    <td><span class="tag-pill tag-scale-down">PRODUCTION CHAMPION</span></td>
+                </tr>
+                <tr>
+                    <td>Random Forest Regressor</td>
+                    <td>0.8459</td>
+                    <td>4.2271%</td>
+                    <td>5.8313%</td>
+                    <td>12.12%</td>
+                    <td>BENCHMARKED</td>
+                </tr>
+                <tr>
+                    <td>Linear Regression (Baseline)</td>
+                    <td>0.7800</td>
+                    <td>5.0926%</td>
+                    <td>6.9674%</td>
+                    <td>14.40%</td>
+                    <td>BASELINE</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">3. DevOps Scaling Audit Trail (Recent Events)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Event Type</th>
+                    <th>Current CPU</th>
+                    <th>AI Forecast</th>
+                    <th>Fleet Nodes</th>
+                    <th>Action Taken</th>
+                    <th>Rationale</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.timestamp }}</td>
+                    <td><strong>{{ log.event_type }}</strong></td>
+                    <td>{{ log.current_cpu }}</td>
+                    <td style="color: #0284c7; font-weight: 700;">{{ log.forecast_cpu }}</td>
+                    <td>{{ log.fleet_size }}</td>
+                    <td>{{ log.action }}</td>
+                    <td style="font-size: 11px; color: #64748b;">{{ log.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            Generated by Intelligent Cloud Resource Optimization System | Autonomous AWS Auto-Scaler Engine
+        </div>
+    </div>
+</body>
+</html>

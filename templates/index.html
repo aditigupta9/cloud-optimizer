@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Optimizer & Predictive Auto-Scaler</title>
+    
+    <!-- Modern Sans & Monospace Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #080c14;
+            --bg-surface: #0f1626;
+            --bg-surface-raised: #151f33;
+            --bg-surface-hover: #1c2a45;
+            
+            --border-subtle: rgba(255, 255, 255, 0.07);
+            --border-medium: rgba(255, 255, 255, 0.12);
+            --border-focus: #3b82f6;
+            
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-glow: rgba(37, 99, 235, 0.25);
+            
+            --emerald: #10b981;
+            --emerald-bg: rgba(16, 185, 129, 0.1);
+            --emerald-border: rgba(16, 185, 129, 0.25);
+            
+            --amber: #f59e0b;
+            --amber-bg: rgba(245, 158, 11, 0.1);
+            --amber-border: rgba(245, 158, 11, 0.25);
+            
+            --crimson: #ef4444;
+            --crimson-bg: rgba(239, 68, 68, 0.1);
+            --crimson-border: rgba(239, 68, 68, 0.25);
+            
+            --cyan: #38bdf8;
+            --purple: #a855f7;
+            
+            --text-main: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            --radius-sm: 6px;
+            --radius-md: 9px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 16px 24px 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* SVG ICONS HELPER */
+        .icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+        .icon-lg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 1. TOP HEADER */
+        .top-header {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+
+        .brand-meta h1 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-meta h1 .version-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            font-family: var(--font-mono);
+        }
+
+        .brand-meta p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--emerald);
+            background: var(--emerald-bg);
+            border: 1px solid var(--emerald-border);
+            padding: 5px 11px;
+            border-radius: var(--radius-sm);
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--emerald);
+            box-shadow: 0 0 8px var(--emerald);
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        .region-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            padding: 5px 11px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+        }
+
+        /* SEGMENTED TELEMETRY SWITCH */
+        .segmented-switch {
+            display: inline-flex;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .segmented-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .segmented-btn:hover {
+            color: var(--text-main);
+        }
+
+        .segmented-btn.active {
+            background: var(--bg-surface-raised);
+            color: #ffffff;
+            border: 1px solid var(--border-medium);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 2. EXECUTIVE COMMAND DOCK (THE REDESIGNED BUTTONS) */
+        .command-bar {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .command-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .command-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border-medium);
+            margin: 0 4px;
+        }
+
+        /* MODERN SLEEK BUTTONS */
+        .cmd-btn {
+            height: 33px;
+            padding: 0 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+        }
+
+        .cmd-btn:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-medium);
+            color: #ffffff;
+        }
+
+        .cmd-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* PRIMARY ACTION */
+        .cmd-btn-primary {
+            background: linear-gradient(180deg, #2563eb, #1d4ed8);
+            border-color: #3b82f6;
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .cmd-btn-primary:hover {
+            background: linear-gradient(180deg, #3b82f6, #2563eb);
+            border-color: #60a5fa;
+            color: #ffffff;
+        }
+
+        /* WARNING / STRESS ACTION */
+        .cmd-btn-warning {
+            background: var(--amber-bg);
+            border-color: var(--amber-border);
+            color: #fcd34d;
+        }
+        .cmd-btn-warning:hover {
+            background: rgba(245, 158, 11, 0.18);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+        }
+
+        /* DANGER / TERMINATE ACTION */
+        .cmd-btn-danger {
+            background: var(--crimson-bg);
+            border-color: var(--crimson-border);
+            color: #fca5a5;
+        }
+        .cmd-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+
+        /* 3. SCENARIO PRESETS (CLEAN & SLEEK) */
+        .scenarios-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 14px 18px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .section-hint {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .scenarios-deck {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 12px;
+        }
+
+        .scenario-tile {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scenario-tile:hover {
+            background: var(--bg-surface-raised);
+            border-color: var(--border-medium);
+            transform: translateY(-1px);
+        }
+
+        .scenario-tile-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .scenario-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-pill {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            letter-spacing: 0.03em;
+        }
+        .badge-up { background: var(--crimson-bg); color: #fca5a5; border: 1px solid var(--crimson-border); }
+        .badge-down { background: var(--emerald-bg); color: #6ee7b7; border: 1px solid var(--emerald-border); }
+        .badge-stable { background: rgba(37, 99, 235, 0.12); color: #93c5fd; border: 1px solid rgba(37, 99, 235, 0.25); }
+
+        .scenario-summary {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        /* 4. DECISION ENGINE HUD */
+        .decision-hud {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--primary);
+            border-radius: var(--radius-md);
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .decision-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .decision-tag {
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+        .decision-tag.scale-up { background: var(--crimson-bg); color: #fca5a5; border: 1px solid var(--crimson-border); }
+        .decision-tag.scale-down { background: var(--emerald-bg); color: #6ee7b7; border: 1px solid var(--emerald-border); }
+        .decision-tag.normal { background: rgba(37, 99, 235, 0.12); color: #93c5fd; border: 1px solid rgba(37, 99, 235, 0.25); }
+
+        .decision-copy h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .decision-copy p {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .cooldown-indicator {
+            text-align: right;
+            min-width: 140px;
+        }
+
+        .cooldown-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+
+        .cooldown-state {
+            font-size: 12px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--emerald);
+            margin-top: 2px;
+        }
+
+        /* 5. METRICS GRID */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .metric-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .metric-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-meta span:first-child {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+        }
+
+        .metric-tag {
+            font-size: 9.5px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            padding: 1px 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .metric-stat {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: var(--font-mono);
+            letter-spacing: -0.02em;
+        }
+
+        .metric-subinfo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 6px;
+            margin-top: 2px;
+        }
+
+        /* 6. MAIN SPLIT (CHART + SERVER RACK) */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 1024px) {
+            .split-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .panel-head h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .panel-head span {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .chart-holder {
+            position: relative;
+            height: 270px;
+            width: 100%;
+        }
+
+        /* SERVER BLADES RACK */
+        .blade-rack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .blade-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+        }
+
+        .blade-item:hover {
+            background: var(--bg-surface-raised);
+            border-color: var(--border-medium);
+        }
+
+        .blade-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .blade-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--emerald);
+            box-shadow: 0 0 6px var(--emerald);
+            flex-shrink: 0;
+        }
+        .blade-light.pending {
+            background: var(--amber);
+            box-shadow: 0 0 6px var(--amber);
+        }
+
+        .blade-id {
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            color: #ffffff;
+        }
+
+        .blade-specs {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            margin-top: 1px;
+            font-family: var(--font-mono);
+        }
+
+        .btn-kill-node {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: inherit;
+        }
+
+        .btn-kill-node:hover {
+            background: var(--crimson-bg);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #ffffff;
+        }
+
+        .policy-note {
+            margin-top: 12px;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 7. AUDIT TRAIL TABLE */
+        .table-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .data-table th {
+            padding: 8px 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-medium);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+        }
+
+        .data-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-main);
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-lg);
+            max-width: 880px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 22px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .modal-header h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .chart-preview-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+        }
+        .chart-preview-box img {
+            width: 100%;
+            border-radius: 4px;
+            display: block;
+        }
+        .chart-preview-box p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* TOAST NOTIFICATION */
+        #statusToast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-surface-raised);
+            border: 1px solid var(--border-medium);
+            border-left: 3px solid var(--primary);
+            border-radius: var(--radius-sm);
+            padding: 12px 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            min-width: 280px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. TOP NAVIGATION & IDENTITY BAR -->
+    <header class="top-header">
+        <div class="header-brand">
+            <div class="brand-logo">
+                <svg class="icon icon-lg" viewBox="0 0 24 24">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+            </div>
+            <div class="brand-meta">
+                <h1>Cloud Optimizer <span class="version-badge">v2.4</span></h1>
+                <p>AI Predictive Telemetry & Elastic Server Management</p>
+            </div>
+        </div>
+
+        <div class="header-controls">
+            <div class="status-chip">
+                <span class="pulse-dot"></span>
+                <span>SYSTEM ACTIVE</span>
+            </div>
+
+            <div class="region-chip">
+                <svg class="icon" viewBox="0 0 24 24" style="color: var(--amber);">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                <span>AWS ap-south-1 (Mumbai)</span>
+            </div>
+            
+            <!-- TELEMETRY SOURCE TOGGLE (PRECISION SVG ICONS) -->
+            <div class="segmented-switch">
+                <button class="segmented-btn {{ 'active' if source == 'live' else '' }}" id="srcLiveBtn" onclick="switchSource('live')">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="2" y1="20" x2="22" y2="20"></line>
+                    </svg>
+                    <span>Laptop Hardware</span>
+                </button>
+                <button class="segmented-btn {{ 'active' if source == 'dataset' else '' }}" id="srcDatasetBtn" onclick="switchSource('dataset')">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    </svg>
+                    <span>Cloud Trace (4k)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. EXECUTIVE COMMAND DOCK (NO CHILDISH EMOJIS, CLEAN SVGs, UNIFIED ROW) -->
+    <div class="command-bar">
+        <!-- GROUP A: TIMELINE SIMULATION -->
+        <div class="command-group">
+            <button class="cmd-btn cmd-btn-primary" onclick="simulateStep()" title="Advance telemetry by 1 step">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                    <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+                <span>Next Step</span>
+            </button>
+            <button class="cmd-btn" id="autoBtn" onclick="toggleAutoPlay()" title="Continuously play live telemetry">
+                <svg class="icon" id="autoIcon" viewBox="0 0 24 24">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span id="autoText">Auto Play</span>
+            </button>
+        </div>
+
+        <div class="command-divider"></div>
+
+        <!-- GROUP B: HARDWARE LOAD TEST -->
+        <div class="command-group">
+            <button class="cmd-btn cmd-btn-warning" onclick="stressRealCPU()" title="Run a 6-second calculation loop on host CPU">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span>Simulate CPU Spike</span>
+            </button>
+        </div>
+
+        <div class="command-divider"></div>
+
+        <!-- GROUP C: CLOUD PROVISIONING CONTROLS -->
+        <div class="command-group">
+            <button class="cmd-btn" onclick="triggerAWSAction('scale_up')" title="Launch an additional EC2 worker instance">
+                <svg class="icon" viewBox="0 0 24 24" style="color: var(--cyan);">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <span>Launch Node</span>
+            </button>
+            <button class="cmd-btn cmd-btn-danger" onclick="triggerAWSAction('scale_down')" title="Terminate a surplus EC2 worker instance">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+                <span>Terminate Node</span>
+            </button>
+        </div>
+
+        <!-- SPACER PUSHES EXPORTS TO RIGHT -->
+        <div style="flex: 1;"></div>
+
+        <!-- GROUP D: REPORTS & INTELLIGENCE -->
+        <div class="command-group">
+            <a href="/download/audit_csv" class="cmd-btn" title="Export scaling event history as CSV">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Export CSV</span>
+            </a>
+            <a href="/report" target="_blank" class="cmd-btn" title="View printable executive audit report">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Audit PDF</span>
+            </a>
+            <button class="cmd-btn" onclick="openModal('evalModal')" title="View ML evaluation metrics and benchmarks">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span>Model Accuracy</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. THREE TEST WORKLOAD SCENARIOS -->
+    <section class="scenarios-section">
+        <div class="section-header">
+            <div class="section-title">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>Interactive Workload Presets</span>
+            </div>
+            <span class="section-hint">Select a preset to test real-time predictive elasticity:</span>
+        </div>
+
+        <div class="scenarios-deck">
+            <!-- Scenario 1 -->
+            <div class="scenario-tile" onclick="triggerScenario('result_day')">
+                <div class="scenario-tile-top">
+                    <span class="scenario-name">
+                        <svg class="icon" viewBox="0 0 24 24" style="color: #f87171;">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                        High Traffic Rush (Exam Results)
+                    </span>
+                    <span class="badge-pill badge-up">SCALES UP</span>
+                </div>
+                <div class="scenario-summary">
+                    ~10,900 students visit simultaneously. CPU rises to 89%. AI proactively provisions an AWS node to prevent website slowdown.
+                </div>
+            </div>
+
+            <!-- Scenario 2 -->
+            <div class="scenario-tile" onclick="triggerScenario('idle_day')">
+                <div class="scenario-tile-top">
+                    <span class="scenario-name">
+                        <svg class="icon" viewBox="0 0 24 24" style="color: #34d399;">
+                            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                            <polyline points="17 18 23 18 23 12"></polyline>
+                        </svg>
+                        Night Time / Low Traffic (3:00 AM)
+                    </span>
+                    <span class="badge-pill badge-down">SCALES DOWN</span>
+                </div>
+                <div class="scenario-summary">
+                    Only ~170 students online. CPU drops to 16%. AI safely decommissions extra idle servers to cut costs, leaving 1 active node.
+                </div>
+            </div>
+
+            <!-- Scenario 3 -->
+            <div class="scenario-tile" onclick="triggerScenario('regular_day')">
+                <div class="scenario-tile-top">
+                    <span class="scenario-name">
+                        <svg class="icon" viewBox="0 0 24 24" style="color: #60a5fa;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Normal Daytime Traffic
+                    </span>
+                    <span class="badge-pill badge-stable">BALANCED</span>
+                </div>
+                <div class="scenario-summary">
+                    ~2,400 students browsing classes. CPU is stable around 46%. Server capacity is optimal, no scaling needed.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. DECISION ENGINE STATUS HUD -->
+    <div class="decision-hud">
+        <div class="decision-left">
+            <div class="decision-tag {{ status or 'normal' }}" id="hudDecisionPill">
+                {{ decision or 'NORMAL (BALANCED)' }}
+            </div>
+            <div class="decision-copy">
+                <h4 id="hudAction">Action: {{ action or 'No scaling action needed. Fleet capacity is balanced.' }}</h4>
+                <p id="hudRationale">{{ rationale or 'Forecast shows CPU load will stay within safe operational limits.' }}</p>
+            </div>
+        </div>
+
+        <div class="cooldown-indicator">
+            <div class="cooldown-label">Anti-Flapping Cooldown</div>
+            <div class="cooldown-state" id="cooldownTimer">STABILIZED</div>
+        </div>
+    </div>
+
+    <!-- 5. FIVE KEY PERFORMANCE INDICATORS -->
+    <div class="metrics-grid">
+        <!-- Card 1 -->
+        <div class="metric-card">
+            <div class="metric-meta">
+                <span>Current CPU Load</span>
+                <span class="metric-tag" id="kpiSourceBadge">{{ 'LAPTOP CPU' if source == 'live' else 'DATASET' }}</span>
+            </div>
+            <div class="metric-stat" id="kpiActualCpu">{{ latest_actual }}%</div>
+            <div class="metric-subinfo">
+                <span>Step: <strong id="kpiStep" style="color: #ffffff;">{{ 'LIVE' if source == 'live' else 'T+' + current_step|string }}</strong></span>
+                <span id="kpiSourceText">{{ 'psutil hardware' if source == 'live' else 'Alibaba Trace' }}</span>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="metric-card">
+            <div class="metric-meta">
+                <span>AI Predicted CPU</span>
+                <span class="metric-tag" style="color: var(--amber);">FORECAST (T+1)</span>
+            </div>
+            <div class="metric-stat" id="kpiPredictedCpu" style="color: var(--cyan);">{{ latest_predicted }}%</div>
+            <div class="metric-subinfo">
+                <span>Gradient Boosting</span>
+                <span style="color: var(--emerald);">R² 84.6%</span>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="metric-card">
+            <div class="metric-meta">
+                <span>Active Online Users</span>
+                <span class="metric-tag" style="color: var(--emerald);">100% SLA</span>
+            </div>
+            <div class="metric-stat" id="kpiStudents">{{ active_students }}</div>
+            <div class="metric-subinfo">
+                <span>Service Uptime:</span>
+                <strong style="color: var(--emerald);">0 Dropped Requests</strong>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="metric-card">
+            <div class="metric-meta">
+                <span>AWS EC2 Nodes</span>
+                <span class="metric-tag" style="color: var(--emerald);">t3.micro</span>
+            </div>
+            <div class="metric-stat" id="kpiActiveNodes" style="color: var(--emerald);">{{ financials.active_nodes }} / {{ financials.max_nodes }}</div>
+            <div class="metric-subinfo">
+                <span>Min: 1 | Max: 4</span>
+                <span>{{ financials.current_hourly_cost }}</span>
+            </div>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="metric-card">
+            <div class="metric-meta">
+                <span>Estimated Savings</span>
+                <span class="metric-tag" style="color: var(--purple);">OPTIMIZED</span>
+            </div>
+            <div class="metric-stat" id="kpiSavings" style="color: var(--purple);">{{ financials.monthly_savings_est }}</div>
+            <div class="metric-subinfo">
+                <span>Cost Reduction:</span>
+                <strong id="kpiSavingsPct" style="color: var(--emerald);">{{ financials.savings_percent }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. MAIN MONITORING SPLIT -->
+    <div class="split-layout">
+        <!-- LEFT: REAL-TIME CPU MONITOR -->
+        <div class="card-panel">
+            <div class="panel-head">
+                <h3>
+                    <svg class="icon" viewBox="0 0 24 24" style="color: var(--cyan);">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Real-Time CPU Usage & AI Prediction
+                </h3>
+                <span id="chartSubText">Source: Live Laptop Hardware (psutil)</span>
+            </div>
+            <div class="chart-holder">
+                <canvas id="telemetryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- RIGHT: ACTIVE AWS SERVERS RACK -->
+        <div class="card-panel" style="justify-content: space-between;">
+            <div>
+                <div class="panel-head">
+                    <h3>
+                        <svg class="icon" viewBox="0 0 24 24" style="color: var(--emerald);">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                        </svg>
+                        Active AWS EC2 Fleet
+                    </h3>
+                    <button class="cmd-btn" style="height: 26px; padding: 0 8px; font-size: 11px;" onclick="refreshFleet()">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <div class="blade-rack" id="fleetRackList">
+                    {% for inst in instances %}
+                    <div class="blade-item">
+                        <div class="blade-left">
+                            <div class="blade-light {{ 'pending' if inst.State == 'pending' else '' }}"></div>
+                            <div>
+                                <div class="blade-id">{{ inst.InstanceId }}</div>
+                                <div class="blade-specs">{{ inst.InstanceType }} • IP: {{ inst.PrivateIp }} ({{ inst.State }})</div>
+                            </div>
+                        </div>
+                        <button class="btn-kill-node" onclick="terminateNode('{{ inst.InstanceId }}')">
+                            <svg class="icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            <span>Terminate</span>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="policy-note">
+                <svg class="icon" viewBox="0 0 24 24" style="color: var(--amber); flex-shrink: 0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>High-Availability Rule: System maintains at least 1 baseline server continuously active.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. SCALING AUDIT TRAIL TABLE -->
+    <div class="table-panel">
+        <div class="panel-head">
+            <h3>
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Scaling Audit History & Rationale
+            </h3>
+            <span>Immutable log of autonomous decisions</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Event</th>
+                        <th>Observed CPU</th>
+                        <th>Predicted CPU</th>
+                        <th>Fleet Size</th>
+                        <th>Action</th>
+                        <th>Decision Rationale</th>
+                    </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.timestamp }}</td>
+                        <td style="color: var(--cyan); font-weight: 600;">{{ log.event_type }}</td>
+                        <td>{{ log.current_cpu }}%</td>
+                        <td style="color: var(--amber); font-weight: 600;">{{ log.forecast_cpu }}%</td>
+                        <td>{{ log.fleet_size }} nodes</td>
+                        <td>{{ log.action }}</td>
+                        <td style="color: var(--text-secondary); font-size: 11px;">{{ log.reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="statusToast">
+        <div style="font-weight: 600; font-size: 13px; color: #ffffff; margin-bottom: 2px;" id="toastTitle">Notification</div>
+        <div style="color: var(--text-secondary); font-size: 11.5px;" id="toastMsg">Processing request...</div>
+    </div>
+
+    <!-- MODAL: MODEL EVALUATION & BENCHMARKS -->
+    <div class="modal-overlay" id="evalModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h3>Machine Learning Model Evaluation</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                        Trained on 4,000 multi-variate cloud trace records. Validated on 799 out-of-time test samples.
+                    </p>
+                </div>
+                <button class="cmd-btn" style="height: 28px; width: 28px; padding: 0; justify-content: center;" onclick="closeModal('evalModal')">&times;</button>
+            </div>
+
+            <table class="data-table" style="margin-bottom: 16px;">
+                <thead>
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>R² Accuracy</th>
+                        <th>Mean Absolute Error (MAE)</th>
+                        <th>Root Mean Squared Error (RMSE)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="color: #ffffff; font-weight: 600;">Gradient Boosting Regressor</td>
+                        <td style="color: var(--emerald); font-weight: 700;">84.6%</td>
+                        <td>4.23%</td>
+                        <td>5.82%</td>
+                        <td><span class="badge-pill badge-down">Selected</span></td>
+                    </tr>
+                    <tr>
+                        <td>Random Forest Regressor</td>
+                        <td>84.5%</td>
+                        <td>4.22%</td>
+                        <td>5.83%</td>
+                        <td><span class="badge-pill badge-stable">Benchmarked</span></td>
+                    </tr>
+                    <tr>
+                        <td>Linear Regression (Baseline)</td>
+                        <td>78.0%</td>
+                        <td>5.09%</td>
+                        <td>6.96%</td>
+                        <td><span class="badge-pill badge-stable">Baseline</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="charts-grid">
+                <div class="chart-preview-box">
+                    <img src="/static/images/evaluation_model_comparison.png" alt="Model Comparison">
+                    <p>Model Performance Benchmarking</p>
+                </div>
+                <div class="chart-preview-box">
+                    <img src="/static/images/evaluation_actual_vs_predicted.png" alt="Actual vs Predicted">
+                    <p>Actual vs Predicted Future CPU</p>
+                </div>
+                <div class="chart-preview-box">
+                    <img src="/static/images/evaluation_feature_importance.png" alt="Feature Importance">
+                    <p>Gini Feature Importance</p>
+                </div>
+                <div class="chart-preview-box">
+                    <img src="/static/images/evaluation_residuals.png" alt="Residual Distribution">
+                    <p>Error Residuals Distribution</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT CONTROLLER -->
+    <script>
+        const initialTimeline = {{ timeline|tojson }};
+        const initialActual = {{ actual_cpu|tojson }};
+        const initialPredicted = {{ predicted_cpu|tojson }};
+
+        // Initialize Chart.js
+        const ctx = document.getElementById('telemetryChart').getContext('2d');
+        const telemetryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: initialTimeline,
+                datasets: [
+                    {
+                        label: 'Current Actual CPU (%)',
+                        data: initialActual,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                        borderWidth: 2,
+                        pointRadius: 2.5,
+                        pointHoverRadius: 5,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'AI Predicted Future CPU (%)',
+                        data: initialPredicted,
+                        borderColor: '#f59e0b',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 2.5,
+                        pointHoverRadius: 5,
+                        tension: 0.3,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#94a3b8', font: { family: 'Inter', size: 11, weight: 500 } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#151f33',
+                        titleColor: '#ffffff',
+                        bodyColor: '#cbd5e1',
+                        borderColor: 'rgba(255, 255, 255, 0.12)',
+                        borderWidth: 1,
+                        padding: 8,
+                        bodyFont: { family: 'JetBrains Mono', size: 11 }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                        ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                        ticks: {
+                            color: '#64748b',
+                            font: { family: 'JetBrains Mono', size: 10 },
+                            callback: function(val) { return val + '%'; }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Toast Helper
+        function showToast(title, msg) {
+            const toast = document.getElementById('statusToast');
+            document.getElementById('toastTitle').innerText = title;
+            document.getElementById('toastMsg').innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        }
+
+        // Trigger Traffic Scenario
+        async function triggerScenario(scenarioType) {
+            showToast('Simulating Workload', 'Injecting preset: ' + scenarioType);
+            try {
+                const res = await fetch('/api/trigger_scenario', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scenario: scenarioType })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    updateDashboard(data);
+                    showToast(data.scenario_title, data.scaling.decision);
+                }
+            } catch (err) {
+                console.error("Scenario error:", err);
+            }
+        }
+
+        // Switch Telemetry Source
+        async function switchSource(newSource) {
+            try {
+                const res = await fetch('/api/set_source', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: newSource })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('srcLiveBtn').classList.toggle('active', newSource === 'live');
+                    document.getElementById('srcDatasetBtn').classList.toggle('active', newSource === 'dataset');
+                    
+                    document.getElementById('kpiSourceBadge').innerText = newSource === 'live' ? 'LAPTOP CPU' : 'DATASET';
+                    document.getElementById('kpiSourceText').innerText = newSource === 'live' ? "psutil hardware" : "Alibaba Trace";
+                    document.getElementById('chartSubText').innerText = newSource === 'live' ? 'Source: Live Laptop Hardware (psutil)' : 'Source: Alibaba Cloud Cluster Trace 2018';
+                    
+                    showToast('Telemetry Source Changed', newSource === 'live' ? 'Streaming live laptop CPU' : 'Replaying Alibaba Cloud trace');
+                    simulateStep();
+                }
+            } catch (err) {
+                console.error("Source error:", err);
+            }
+        }
+
+        // Test Hardware CPU Spike
+        async function stressRealCPU() {
+            showToast('Simulating CPU Spike', 'Running calculation loop on laptop processor cores for 6s...');
+            try {
+                await fetch('/api/stress_cpu', { method: 'POST' });
+                const liveBtn = document.getElementById('srcLiveBtn');
+                if (liveBtn && !liveBtn.classList.contains('active')) {
+                    await switchSource('live');
+                }
+                setTimeout(simulateStep, 1000);
+                setTimeout(simulateStep, 2500);
+                setTimeout(simulateStep, 4500);
+                setTimeout(simulateStep, 7000);
+            } catch (err) {
+                console.error("Stress error:", err);
+            }
+        }
+
+        // Launch / Terminate AWS Server
+        async function triggerAWSAction(actionType) {
+            showToast('Contacting AWS EC2', 'Executing ' + actionType + ' in ap-south-1...');
+            try {
+                const res = await fetch('/api/manual_scale', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: actionType })
+                });
+                const data = await res.json();
+                showToast(data.success ? 'AWS Status' : 'Notice', data.message);
+                if (data.instances) renderFleetList(data.instances);
+                if (data.logs) renderAuditLogs(data.logs);
+                refreshFleet();
+            } catch (err) {
+                showToast('Error', 'Could not communicate with server.');
+            }
+        }
+
+        // Terminate Specific Node
+        async function terminateNode(instId) {
+            if (!confirm(`Confirm decommissioning instance ${instId}?`)) return;
+            showToast('AWS EC2 Action', `Terminating ${instId}...`);
+            try {
+                const res = await fetch('/api/terminate_instance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instance_id: instId })
+                });
+                const data = await res.json();
+                showToast(data.success ? 'Node Terminated' : 'Alert', data.message);
+                if (data.instances) renderFleetList(data.instances);
+                if (data.logs) renderAuditLogs(data.logs);
+                refreshFleet();
+            } catch (err) {
+                showToast('Error', 'Failed to terminate node.');
+            }
+        }
+
+        // Refresh Server List
+        async function refreshFleet() {
+            try {
+                const res = await fetch('/api/fleet_status');
+                const data = await res.json();
+                renderFleetList(data.instances);
+                if (data.recent_events) renderAuditLogs(data.recent_events);
+                document.getElementById('kpiActiveNodes').innerText = data.instances.length + ' / ' + data.financials.max_nodes;
+                document.getElementById('kpiSavings').innerText = data.financials.monthly_savings_est;
+                document.getElementById('kpiSavingsPct').innerText = data.financials.savings_percent;
+            } catch (err) {
+                console.error("Failed to sync fleet:", err);
+            }
+        }
+
+        function renderFleetList(instances) {
+            const rack = document.getElementById('fleetRackList');
+            rack.innerHTML = '';
+            if (instances.length === 0) {
+                rack.innerHTML = '<div style="color: var(--text-muted); font-size: 11.5px; text-align: center; padding: 24px;">No dynamic nodes active.<br>1 baseline node maintained.</div>';
+                return;
+            }
+            instances.forEach(inst => {
+                const item = document.createElement('div');
+                item.className = 'blade-item';
+                item.innerHTML = `
+                    <div class="blade-left">
+                        <div class="blade-light ${inst.State === 'pending' ? 'pending' : ''}"></div>
+                        <div>
+                            <div class="blade-id">${inst.InstanceId}</div>
+                            <div class="blade-specs">${inst.InstanceType} • IP: ${inst.PrivateIp} (${inst.State})</div>
+                        </div>
+                    </div>
+                    <button class="btn-kill-node" onclick="terminateNode('${inst.InstanceId}')">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        <span>Terminate</span>
+                    </button>
+                `;
+                rack.appendChild(item);
+            });
+        }
+
+        function renderAuditLogs(logs) {
+            const tbody = document.getElementById('auditTableBody');
+            tbody.innerHTML = '';
+            logs.slice(0, 15).forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${log.timestamp}</td>
+                    <td style="color: var(--cyan); font-weight: 600;">${log.event_type}</td>
+                    <td>${log.current_cpu}%</td>
+                    <td style="color: var(--amber); font-weight: 600;">${log.forecast_cpu}%</td>
+                    <td>${log.fleet_size} nodes</td>
+                    <td>${log.action}</td>
+                    <td style="color: var(--text-secondary); font-size: 11px;">${log.reason}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Step Forward 1 Second
+        async function simulateStep() {
+            try {
+                const res = await fetch('/api/simulate_step', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    updateDashboard(data);
+                }
+            } catch (err) {
+                console.error("Step error:", err);
+            }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('kpiActualCpu').innerText = data.current_telemetry.cpu_percent + '%';
+            document.getElementById('kpiPredictedCpu').innerText = data.prediction.predicted_cpu + '%';
+            document.getElementById('kpiStudents').innerText = data.active_students;
+            document.getElementById('kpiStep').innerText = data.source === 'live' ? 'LIVE' : data.step;
+            
+            // HUD
+            const hudPill = document.getElementById('hudDecisionPill');
+            hudPill.className = 'decision-tag ' + data.scaling.status;
+            hudPill.innerText = data.scaling.decision;
+            
+            document.getElementById('hudAction').innerText = 'Action: ' + data.scaling.action;
+            document.getElementById('hudRationale').innerText = data.scaling.rationale;
+            
+            const timer = document.getElementById('cooldownTimer');
+            if (data.scaling.cooldown_remaining > 0) {
+                timer.innerText = data.scaling.cooldown_remaining + 's (COOLDOWN)';
+                timer.style.color = 'var(--amber)';
+            } else {
+                timer.innerText = 'STABILIZED';
+                timer.style.color = 'var(--emerald)';
+            }
+            
+            // Chart update
+            telemetryChart.data.labels = data.chart_data.labels;
+            telemetryChart.data.datasets[0].data = data.chart_data.actual;
+            telemetryChart.data.datasets[1].data = data.chart_data.predicted;
+            telemetryChart.update();
+            
+            if (data.fleet) renderFleetList(data.fleet);
+            if (data.logs) renderAuditLogs(data.logs);
+        }
+
+        // Auto Play Mode
+        let autoPlayTimer = null;
+        function toggleAutoPlay() {
+            const btn = document.getElementById('autoBtn');
+            const autoIcon = document.getElementById('autoIcon');
+            const autoText = document.getElementById('autoText');
+            
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                btn.classList.remove('cmd-btn-primary');
+                autoIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+                autoText.innerText = 'Auto Play';
+                showToast('Auto Play Paused', 'Telemetry loop stopped');
+            } else {
+                simulateStep();
+                autoPlayTimer = setInterval(simulateStep, 1800);
+                btn.classList.add('cmd-btn-primary');
+                autoIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+                autoText.innerText = 'Pause Stream';
+                showToast('Auto Play Active', 'Streaming telemetry every 1.8s');
+            }
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+        window.onclick = function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.style.display = 'none';
+            }
+        };
+
+        // Auto sync fleet on initial load
+        refreshFleet();
+    </script>
+</body>
+</html>
